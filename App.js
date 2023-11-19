@@ -1,10 +1,12 @@
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
-import { StyleSheet, View, Dimensions, Text } from "react-native";
+import { StyleSheet, View, Dimensions, Text, TouchableOpacity } from "react-native";
 import React, { useState, useEffect, useRef } from "react";
 import * as Location from "expo-location";
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import {GOOGLE_API_KEY} from  '@env'
 import Constants from 'expo-constants';
+import MapViewDirections from 'react-native-maps-directions';
+
 
 // type InputAutocompleteProps = {
 //   label: string;
@@ -45,6 +47,8 @@ export default function App() {
   const [origin, setOrigin] = useState()
   const [destination, setDestination] = useState()
   const mapRef = useRef(null)
+ // const [marker, setMarker] = useState(null)
+  const [markers, setMarker] = useState([]);
 
 
   const moveTo = async (position) => {
@@ -74,6 +78,7 @@ export default function App() {
   const LATITUDE_DELTA = 0.02;
   const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
  
+
 
   // const userLocation = async () => {
   //     let {status} = await Location.requestForegroundPermissionsAsync();
@@ -113,10 +118,75 @@ export default function App() {
         }}
         zoomControlEnabled={true}
         zoomEnabled={true}
+        // onPress={(e) => 
+        //   setMarker([...markers, e.nativeEvent.coordinate])
         
-      > 
+        // }
+        onPress={(e) => {
+          setMarker((prevMarkers) => {
+            const newMarkers = [...prevMarkers, e.nativeEvent.coordinate];
+            console.log(newMarkers);
+            return newMarkers;
+          });
+        }}
+        
+      >
+
+      {markers.map((marker, index) => (
+        <Marker
+          key={index} // It's important to include a unique key for each marker when mapping over an array
+          draggable
+          coordinate={marker}
+          onPress={() => Alert.alert("test")}
+        />
+      ))}
+              
+        <Marker 
+        coordinate={{latitude: 32, longitude:32}}
+      />
+    
+      
         {origin && <Marker coordinate={origin}/>}
         {destination && <Marker coordinate={destination}/>}
+        { origin && destination && <MapViewDirections
+          origin={origin}
+          destination={destination}
+          apikey={GOOGLE_API_KEY}
+          strokeColor = "#6655ff"
+          strokeWidth ={4}
+        />}
+
+        { markers && <MapViewDirections
+          origin={{    
+            latitude: 43.59097290788204,
+            longitude: -79.65908202350107}}
+          destination={markers[0]}
+          apikey={GOOGLE_API_KEY}
+          strokeColor = "#6655ff"
+          strokeWidth ={4}
+        />  }
+        
+        {markers.length >= 2 && (
+          <>
+            {markers.slice(0, -1).map((marker, index) => (
+              <MapViewDirections
+                key={index}
+                origin={markers[index]}
+                destination={markers[index+1]}
+                apikey={GOOGLE_API_KEY}
+                strokeColor="#6655ff"
+                strokeWidth={4}
+              />
+            ))}
+          </>
+        )}
+
+
+
+
+
+      window.initMap = initMap;
+
       </MapView>
       
 
@@ -141,7 +211,9 @@ export default function App() {
           OPS(mapData = {details:details, flag : "destination"})
           console.log('this new 2', destination)
         }} />
-        
+        <TouchableOpacity>
+          <Text>Trace Route</Text>
+        </TouchableOpacity>
       </View>
 
       
