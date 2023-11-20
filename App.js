@@ -1,4 +1,4 @@
-import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
+import MapView, { Marker, PROVIDER_GOOGLE,Geojson } from "react-native-maps";
 import { StyleSheet, View, Dimensions, Text, TouchableOpacity } from "react-native";
 import React, { useState, useEffect, useRef } from "react";
 import * as Location from "expo-location";
@@ -6,6 +6,10 @@ import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplet
 import {GOOGLE_API_KEY} from  '@env'
 import Constants from 'expo-constants';
 import MapViewDirections from 'react-native-maps-directions';
+import axios from 'axios'
+import {DOMParser} from 'xmldom'
+import {kml} from '@tmcw/togeojson'
+
 
 
 // type InputAutocompleteProps = {
@@ -49,7 +53,29 @@ export default function App() {
   const mapRef = useRef(null)
  // const [marker, setMarker] = useState(null)
   const [markers, setMarker] = useState([]);
+  const [myPlace, setMyPlace] = useState()
 
+  const fetchKML = async () => {
+    const url = "https://gist.githubusercontent.com/Kevin9921/5724405b28212e08ff7ed33880b3d36b/raw/1842024ecadc45647a7e7117270242ed0b6a8144/gistfile1.txt"
+
+    const result = await axios.get(url).then(res => res.data).catch(e => {
+
+    
+      console.log(e)
+      return null
+  })
+
+
+  if(result !=null){
+    const theKML = new DOMParser().parseFromString(result)
+    const converted = kml(theKML);
+    setMyPlace(converted)
+  }
+  }
+
+  useEffect(() => {
+    fetchKML()
+  }, [])
 
   const moveTo = async (position) => {
     const camera = await mapRef.current?.getCamera()
@@ -105,89 +131,97 @@ export default function App() {
   //console.log('this' ,lat, lon)
   return (
     <View style={styles.container}>
-      <MapView
-        ref={mapRef}
-        style={styles.map}
-        provider={PROVIDER_GOOGLE}
-        //Region={mapRegion}
-        initialRegion ={{
-          latitude: 43.59097290788204,
-          longitude: -79.65908202350107,
-          latitudeDelta: 0.25,
-          longitudeDelta: 0.25,
-        }}
-        zoomControlEnabled={true}
-        zoomEnabled={true}
-        // onPress={(e) => 
-        //   setMarker([...markers, e.nativeEvent.coordinate])
-        
-        // }
-        onPress={(e) => {
-          setMarker((prevMarkers) => {
-            const newMarkers = [...prevMarkers, e.nativeEvent.coordinate];
-            console.log(newMarkers);
-            return newMarkers;
-          });
-        }}
-        
-      >
 
-      {markers.map((marker, index) => (
-        <Marker
-          key={index} // It's important to include a unique key for each marker when mapping over an array
-          draggable
-          coordinate={marker}
-          onPress={() => Alert.alert("test")}
-        />
-      ))}
-              
-        <Marker 
-        coordinate={{latitude: 32, longitude:32}}
-      />
-    
-      
-        {origin && <Marker coordinate={origin}/>}
-        {destination && <Marker coordinate={destination}/>}
-        { origin && destination && <MapViewDirections
-          origin={origin}
-          destination={destination}
-          apikey={GOOGLE_API_KEY}
-          strokeColor = "#6655ff"
-          strokeWidth ={4}
-        />}
-
-        { markers && <MapViewDirections
-          origin={{    
+      {myPlace && <MapView
+          ref={mapRef}
+          style={styles.map}
+          provider={PROVIDER_GOOGLE}
+          //Region={mapRegion}
+          initialRegion ={{
             latitude: 43.59097290788204,
-            longitude: -79.65908202350107}}
-          destination={markers[0]}
-          apikey={GOOGLE_API_KEY}
-          strokeColor = "#6655ff"
-          strokeWidth ={4}
-        />  }
+            longitude: -79.65908202350107,
+            latitudeDelta: 0.25,
+            longitudeDelta: 0.25,
+          }}
+          zoomControlEnabled={true}
+          zoomEnabled={true}
+          // onPress={(e) => 
+          //   setMarker([...markers, e.nativeEvent.coordinate])
+          
+          // }
+          onPress={(e) => {
+            setMarker((prevMarkers) => {
+              const newMarkers = [...prevMarkers, e.nativeEvent.coordinate];
+              console.log(newMarkers);
+              return newMarkers;
+            });
+          }}
+          
+        >
+        <Geojson
+        geojson= {myPlace}
+        fillColor="blue"
+        strokeWidth={3}
+        />
+
+      
+
+        {markers.map((marker, index) => (
+          <Marker
+            key={index} // It's important to include a unique key for each marker when mapping over an array
+            draggable
+            coordinate={marker}
+            //onPress={() => Alert.alert("test")}
+          />
+        ))}
+                
+          <Marker 
+          coordinate={{latitude: 32, longitude:32}}
+        />
+      
         
-        {markers.length >= 2 && (
-          <>
-            {markers.slice(0, -1).map((marker, index) => (
-              <MapViewDirections
-                key={index}
-                origin={markers[index]}
-                destination={markers[index+1]}
-                apikey={GOOGLE_API_KEY}
-                strokeColor="#6655ff"
-                strokeWidth={4}
-              />
-            ))}
-          </>
-        )}
+          {origin && <Marker coordinate={origin}/>}
+          {destination && <Marker coordinate={destination}/>}
+          { origin && destination && <MapViewDirections
+            origin={origin}
+            destination={destination}
+            apikey={GOOGLE_API_KEY}
+            strokeColor = "#6655ff"
+            strokeWidth ={4}
+          />}
+
+          { markers && <MapViewDirections
+            origin={{    
+              latitude: 43.59097290788204,
+              longitude: -79.65908202350107}}
+            destination={markers[0]}
+            apikey={GOOGLE_API_KEY}
+            strokeColor = "#6655ff"
+            strokeWidth ={4}
+          />  }
+          
+          {markers.length >= 2 && (
+            <>
+              {markers.slice(0, -1).map((marker, index) => (
+                <MapViewDirections
+                  key={index}
+                  origin={markers[index]}
+                  destination={markers[index+1]}
+                  apikey={GOOGLE_API_KEY}
+                  strokeColor="#6655ff"
+                  strokeWidth={4}
+                />
+              ))}
+            </>
+          )}
 
 
 
 
 
-      window.initMap = initMap;
-
-      </MapView>
+      
+                
+        </MapView>}
       
 
       <View style={styles.searchContainer}>
